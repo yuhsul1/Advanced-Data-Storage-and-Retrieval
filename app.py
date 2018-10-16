@@ -7,7 +7,7 @@ import numpy as np
 
 app = Flask(__name__)
 
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///Resources/hawaii.sqlite", connect_args={'check_same_thread': False})
 Base = automap_base()
 Base.prepare(engine, reflect=True)
 
@@ -23,7 +23,10 @@ def Welcome():
     f"Welcome to Hawaii Weather Percipitation API <br \>" 
     f"For Percipitation by Dates please visit: /api/v1.0/precipitation<br \>"
     f"For all Station list please visit:/api/v1.0/stations<br \>"
-    f"For all Temperature list from past year, please visit: /api/v1.0/tobs"
+    f"For all Temperature list from past year, please visit: /api/v1.0/tobs<br \>"
+    f"For all Temperature data for given starting time, please type yyyy-mm-dd at the end using: /api/v1.0/start/<br \>"
+    f"For all Temperature data for given starting time, please enter starting and end date yyyy-mm-dd/yyyy-mm-dd at the end using: /api/v1.0/start/end<br \>"
+
     )
 
 
@@ -65,7 +68,37 @@ def tobs():
 
     return jsonify(list)
 
+@app.route("/api/v1.0/start/<start>")
+def start(start):
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs),func.max(Measurement.tobs)).filter(Measurement.date>=start).all()
 
+    list = []
+    
+    for result in results:
+        tobs = { "Min Temp":[], "Avg Temp":[], "Max Temp":[]}
+      
+        tobs["Min Temp"].append(result[0])
+        tobs["Avg Temp"].append(result[1])
+        tobs["Max Temp"].append(result[2])
+        list.append(tobs)
+
+    return jsonify(list)
+
+@app.route("/api/v1.0/start/end/<start>/<end>")
+def start_end(start, end):
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs),func.max(Measurement.tobs)).filter(Measurement.date>=start, Measurement.date<=end).all()
+
+    list = []
+    
+    for result in results:
+        tobs = {"Min Temp":[], "Avg Temp":[], "Max Temp":[]}
+        
+        tobs["Min Temp"].append(result[0])
+        tobs["Avg Temp"].append(result[1])
+        tobs["Max Temp"].append(result[2])
+        list.append(tobs)
+
+    return jsonify(list)
 
 
 if __name__ == "__main__":
